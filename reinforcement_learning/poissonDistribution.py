@@ -74,7 +74,7 @@ if __name__ =='__main__':
     df = pd.DataFrame( data, columns = columns )
 
     df = df.sort_values( 'prob', ascending=False )
-    df.to_csv( "./data/state_distribution.csv" )
+    df.to_csv( "./data/state_distribution.csv", index=False )
 
     print( df )
 

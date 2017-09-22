@@ -6,15 +6,25 @@ POS_INFINITY = float( 'inf' )
 NEG_INFINITY = -float( 'inf' )
 
 class RLProcessor( object ):
-    def __init__( self, states, env, initialValues = None ):
-        self._states = states.copy()
-        self._policy = Policy()
-        self._env    = env
+    """
+    RLProcessor class is responsible for the learning process.'
+
+    Args:
+        states: a list of states. This defines all the possible states in the problem.
+        env:    An Environment object representing the external environment.
+        initialValues: The initial value of each state. If not specified, the default value is 0.
+    """
+
+    def __init__( self, states, env, initialValues = None, maxValueGap=0.01 ):
+        self._states     = states self._env        = env
+        self._policy     = Policy( env )
+        self.maxValueGap = maxValueGap
 
         # set up the initial values for sates if available
         self._values = defaultdict( lambda : 0 )
-        for state, initialValue in initialValues.iteritems():
-            self._values[ state.getHash() ] = initialValue
+        if initialValues:
+            for state, initialValue in initialValues.iteritems():
+                self._values[ state.getHash() ] = initialValue
 
 
     def doPolicyEvaluation( self ):
@@ -46,7 +56,7 @@ class RLProcessor( object ):
 
     def _updateValue( self, state, action ):
         ''' return the updated value of the a state '''
-        distributionOfNextState = self._environment.getDistributionOfNextStates( state, action )
+        distributionOfNextState = self._env.getDistributionOfNextState( state, action )
         value = 0
         gamma = self._gamma
         for state, prob in distributionOfNextState.getDistribution().iteritems():
@@ -126,22 +136,48 @@ class FiniteDistribution( object ):
 
         
 class Policy( object ):
-    def __init__( self ):
+    def __init__( self, env=None ):
         self._greedyAction = dict()
-
+        self._env = env
 
     def getAction( self, state ):
         stateHash = state.getHash()
         if stateHash in self._greedyAction:
             return self._greedyAction[ stateHash ]
 
+        if self._env:   # if we have a modle of the environment
+            env          = self._env
+            discount     = env.getDiscountFactor()
+            max_value    = NEG_INFINITY
+            greedyAction = None
 
+            for action in state.getActions():
+                distributionOfNextState = env.getDistributionOfNextState( state, action )
+                value = 0
+                for nextState, prob in distributionOfNextState:
+                    valueOfNextState = env.getValue( nextState )
+                    value += prob * ( env.getReward( state, action, nextState ) + discount * valueOfNextState )
 
+                if value > max_value:
+                    max_value = value
+                    greedyAction = action
+
+            self._greedyAction[ stateHash ] = greedyAction
+
+            return greedyAction
+        
+        
     def getActions( self, state ):
         raise NotImplementedError
 
     def updateActionOfState( self, state, action ):
         self._greedyAction[ state.getHash() ] = action
+
+
+
+
+
+
 
 
 class State( object ):
@@ -158,7 +194,7 @@ class State( object ):
         returns a distribution object that represents the probability
         distribution of states for the next step. 
         '''
-        pass 
+        raise NotImplementedError
 
     def setValue( self, value ):
         self._value = value
@@ -173,9 +209,14 @@ class Action( object ):
         raise NotImplementedError
 
 class Environment( object ):
-    def getDistributionOfNextStates( self, state, action ):
+    def getDistributionOfNextState( self, state, action ):
         ''' 
         returns a distribution object that represents the probability
         distribution of states for the next step. 
         '''
         raise NotImplementedError
+
+
+    def getReward( self, state, action, nextState ):
+        raise NotImplementedError
+

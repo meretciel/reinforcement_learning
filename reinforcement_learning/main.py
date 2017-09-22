@@ -1,24 +1,34 @@
 
 import reinforcement_learning.components as comp
-from Jacks_Car import CarBusinessState
+from Jacks_Car import CarBusinessState, ModeledEnv
+from os import path 
+import pandas as pd 
+
+
 
 
 if __name__ == '__main__':
 
+
+    data_dir  = r"/home/ruikun/workspace/python/reinforcement_learning/data"
+    df_dist   = pd.read_csv( path.join( data_dir, 'state_distribution.csv' ) )
+
+    requestReturnStates = df_dist.drop( 'prob', axis=1 ).values
+
+
     print( "construct states." )
     states = [] 
-    for i0 in xrange( 10 ):
-        for i1 in xrange( 10 ):
-            for i2 in xrange( 10 ):
-                for i3 in xrange( 10 ):
-                    for i4 in xrange( 20 ):
-                        for i5 in xrange( 20 ):
-                            states.append( CarBusinessState( i0, i1, i2, i3, i4, i5 ) )
+    for ( rq_1, rq_2, ret_1, ret_2 ) in requestReturnStates:
+        for i in xrange( 20 ):
+            for j in xrange( 20 ):
+                states.append( CarBusinessState( rq_1, rq_2, ret_1, ret_2, i, j ) )
 
-    print( "states are ready." )                            
+    print ( "total {} states are created.".format( len( states ) ) )
 
     print( "construct processor." )
-    learningProcessor = comp.RLProcessor( states )
+
+    env               = ModeledEnv()
+    learningProcessor = comp.RLProcessor( states, env )
 
     print( "Processor will run shortly." )
     learningProcessor.run()

@@ -17,6 +17,9 @@ class JacksAction( Action ):
     def getNumMoveFromFirstToSecond( self ):
         return self._numMoveFromFirstToSecond
 
+    def __repr__( self ):
+        return str( ( self._rent_1, self._rent_2, self._numMoveFromFirstToSecond ) )
+
 
 class CarBusinessState( State ):
     def __init__( self, requestFirstLoc, requestSecondLoc,  returnedFirstLoc, returnedSecondLoc, currentFirstLoc, currentSecondLoc ):
@@ -26,6 +29,16 @@ class CarBusinessState( State ):
         self._ret_2  = returnedSecondLoc
         self._curr_1 = currentFirstLoc
         self._curr_2 = currentSecondLoc
+        self._value  = 0
+
+
+    def __repr__( self ):
+        part1 = str( ( self._rq_1, self._rq_2, self._ret_1,  self._ret_2, self._curr_1, self._curr_2 ) )
+        part2 = "value: {}".format( self._value )
+        return "{}, {}".format( part1, part2 )
+
+
+
 
     def getHash( self ):
         ''' return a hashable object '''
@@ -49,17 +62,20 @@ class CarBusinessState( State ):
 
 class ModeledEnv( Environment ):
     maxCarInEachLocation = 20
-    minProb              = 0.0002
+    minProb              = 0.0005
     lambdas              = [ 4, 3, 3, 2 ] 
     model                = scipy.stats.poisson
     poissonDistributionTable    = None
     stateDistributionTable      = dict()
-    
+
 
     def computeProb( self, _n, _lambda ):
         return ModelEnv.model.pmf( _lambda, _n )
 
     def getDistributionOfNextState( self, state, action ):
+        print( "ModeledEnv.getDistributionOfNextState: state={}".format( state ) )
+        print( "ModeledEnv.getDistributionOfNextState: action={}".format( action ) )
+
         assert action in state.getActions()
 
         rq_1, rq_2, ret_1, ret_2, curr_1, curr_2 = state.getHash()
